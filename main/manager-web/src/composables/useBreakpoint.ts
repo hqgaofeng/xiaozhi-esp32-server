@@ -1,81 +1,65 @@
 // composables/useBreakpoint.ts
-// 响应式断点判断,Composition API
+// 全局响应式断点 - 模块加载时立即初始化 + 全局 resize 监听
+// 不依赖 onMounted 生命周期,保证永远同步
 
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 
 export type Breakpoint = 'mobile' | 'pad' | 'tablet' | 'desktop' | 'wide'
 
-const QUERIES = {
-  mobile: '(max-width: 639px)',
-  pad: '(min-width: 640px) and (max-width: 1023px)',
-  tablet: '(min-width: 1024px) and (max-width: 1279px)',
-  desktop: '(min-width: 1280px) and (max-width: 1679px)',
-  wide: '(min-width: 1680px)'
+// 模块级 ref
+const width = ref<number>(typeof window !== 'undefined' ? window.innerWidth : 1280)
+
+let resizeTimer: number | null = null
+let cleanup: (() => void) | null = null
+
+function update() {
+  if (typeof window === 'undefined') return
+  width.value = window.innerWidth
+}
+
+// 模块加载时立即初始化(在浏览器环境)
+if (typeof window !== 'undefined') {
+  // 立即同步
+  width.value = window.innerWidth
+
+  // 注册全局 resize 监听
+  const onResize = () => {
+    if (resizeTimer) clearTimeout(resizeTimer)
+    resizeTimer = window.setTimeout(update, 100) as unknown as number
+  }
+  window.addEventListener('resize', onResize)
+
+  // 兜底:每 500ms 检查一次,保证同步
+  const poll = window.setInterval(() => {
+    if (window.innerWidth !== width.value) {
+      width.value = window.innerWidth
+    }
+  }, 500)
+
+  cleanup = () => {
+    window.removeEventListener('resize', onResize)
+    clearInterval(poll)
+    if (resizeTimer) clearTimeout(resizeTimer)
+  }
 }
 
 export function useBreakpoint() {
-  const width = ref(typeof window !== 'undefined' ? window.innerWidth : 1280)
-  const breakpoint = ref<Breakpoint>('desktop')
-
-  const matches = {
-    mobile: ref(false),
-    pad: ref(false),
-    tablet: ref(false),
-    desktop: ref(false),
-    wide: ref(false),
-    isMobile: computed(() => width.value < 640),
-    isPad: computed(() => width.value >= 640 && width.value < 1024),
-    isTabletOrUp: computed(() => width.value >= 1024),
-    isDesktop: computed(() => width.value >= 1280),
-    isWide: computed(() => width.value >= 1680)
-  }
-
-  let mediaQueries: MediaQueryList[] = []
-  let mqListeners: Array<() => void> = []
-
-  function update() {
-    width.value = window.innerWidth
-    for (const key of Object.keys(QUERIES) as Array<keyof typeof QUERIES>) {
-      matches[key].value = window.matchMedia(QUERIES[key]).matches
-    }
-    if (matches.mobile.value) breakpoint.value = 'mobile'
-    else if (matches.pad.value) breakpoint.value = 'pad'
-    else if (matches.tablet.value) breakpoint.value = 'tablet'
-    else if (matches.wide.value) breakpoint.value = 'wide'
-    else breakpoint.value = 'desktop'
-  }
-
-  function onResize() {
-    let timer: number | null = null
-    return () => {
-      if (timer) window.clearTimeout(timer)
-      timer = window.setTimeout(update, 100)
-    }
-  }
-
-  onMounted(() => {
-    update()
-    const handler = onResize()
-    window.addEventListener('resize', handler)
-
-    // 注册 mq 监听
-    for (const key of Object.keys(QUERIES) as Array<keyof typeof QUERIES>) {
-      const mq = window.matchMedia(QUERIES[key])
-      const listener = () => update()
-      mq.addEventListener('change', listener)
-      mediaQueries.push(mq)
-      mqListeners.push(() => mq.removeEventListener('change', listener))
-    }
-
-    onBeforeUnmount(() => {
-      window.removeEventListener('resize', handler)
-      mqListeners.forEach((off) => off())
-    })
-  })
+  // 组件卸载时不清全局监听
+  onBeforeUnmount(() => {})
 
   return {
-    width,
-    breakpoint,
-    ...matches
+    width: computed(() => width.value),
+    isMobile: computed(() => width.value < 640),
+    isPad: computed(() => width.value >= 640 && width.value < 1024),
+    isTablet: computed(() => width.value >= 1024 && width.value < 1280),
+    isDesktop: computed(() => width.value >= 1280 && width.value < 1680),
+    isWide: computed(() => width.value >= 1680),
+    breakpoint: computed<Breakpoint>(() => {
+      if (width.value < 640) return 'mobile'
+      if (width.value < 1024) return 'pad'
+      if (width.value < 1280) return 'tablet'
+      if (width.value < 1680) return 'desktop'
+      return 'wide'
+    })
   }
 }

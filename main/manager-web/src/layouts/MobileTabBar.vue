@@ -76,25 +76,28 @@ function go(path: string) {
   font-weight: 500;
 }
 
-// 中央唤醒按钮 — 突出
+// 中央唤醒按钮 — 突出(不凸出,保持基线)
 .tab.is-center {
   flex: 0 0 auto;
-  margin: 0 8px;
-  top: -12px;  // 微微凸出
+  margin: 0 4px;
 
   .tab-icon {
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: var(--color-accent);
     color: white;
-    padding: 12px;
+    padding: 8px;
     box-shadow: 0 4px 12px rgba(255, 122, 69, 0.4);
     transition: transform 120ms var(--ease-standard);
   }
 
   &:active .tab-icon {
     transform: scale(0.95);
+  }
+
+  .tab-label {
+    margin-top: 2px;
   }
 }
 </style>

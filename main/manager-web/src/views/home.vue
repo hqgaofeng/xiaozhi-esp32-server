@@ -1,387 +1,255 @@
-<template>
-  <div class="welcome">
-    <!-- 公共头部 -->
-    <HeaderBar :devices="devices" @search="handleSearch" @search-reset="handleSearchReset" />
-    <el-main style="padding: 20px;display: flex;flex-direction: column;">
-      <div>
-        <!-- 首页内容 -->
-        <div class="add-device">
-          <div class="add-device-bg">
-            <div class="hellow-text" style="margin-top: 30px;">
-              {{ $t('home.greeting') }}
-            </div>
-            <div class="hellow-text">
-              {{ $t('home.wish') }}
-            </div>
-            <div class="hi-hint">
-              let's have a wonderful day!
-            </div>
-            <div class="add-device-btn">
-              <div class="left-add" @click="showAddDialog">
-                {{ $t('home.addAgent') }}
-              </div>
-              <div style="width: 23px;height: 13px;background: #5778ff;margin-left: -10px;" />
-              <div class="right-add">
-                <i class="el-icon-right" @click="showAddDialog" style="font-size: 20px;color: #fff;" />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="device-list-container">
-          <template v-if="isLoading">
-            <div v-for="i in skeletonCount" :key="'skeleton-' + i" class="skeleton-item">
-              <div class="skeleton-image"></div>
-              <div class="skeleton-content">
-                <div class="skeleton-line"></div>
-                <div class="skeleton-line-short"></div>
-              </div>
-            </div>
-          </template>
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useBreakpoint } from '@/composables/useBreakpoint'
+import {
+  Cpu,
+  Activity,
+  MessageCircle,
+  Zap,
+  ChevronRight,
+  Sparkles
+} from 'lucide-vue-next'
 
-          <template v-else>
-            <DeviceItem v-for="(item, index) in devices" :key="index" :device="item" :feature-status="featureStatus" 
-              @configure="goToRoleConfig" @deviceManage="handleDeviceManage" @delete="handleDeleteAgent" 
-              @chat-history="handleShowChatHistory" />
-          </template>
-        </div>
-      </div>
-      <AddWisdomBodyDialog :visible.sync="addDeviceDialogVisible" @confirm="handleWisdomBodyAdded" />
-    </el-main>
-    <el-footer>
-      <version-footer />
-    </el-footer>
-    <chat-history-dialog :visible.sync="showChatHistory" :agent-id="currentAgentId" :agent-name="currentAgentName" />
-  </div>
+import StatCard from '@/components/dashboard/StatCard.vue'
+import AgentCard from '@/components/dashboard/AgentCard.vue'
+import DeviceCard from '@/components/dashboard/DeviceCard.vue'
+import LiveStream from '@/components/dashboard/LiveStream.vue'
 
-</template>
+const router = useRouter()
+const { isMobile, isPad, breakpoint } = useBreakpoint()
 
-<script>
-import Api from '@/apis/api';
-import AddWisdomBodyDialog from '@/components/AddWisdomBodyDialog.vue';
-import ChatHistoryDialog from '@/components/ChatHistoryDialog.vue';
-import DeviceItem from '@/components/DeviceItem.vue';
-import HeaderBar from '@/components/HeaderBar.vue';
-import VersionFooter from '@/components/VersionFooter.vue';
-import featureManager from '@/utils/featureManager';
+// === Mock 数据(Phase 6 接真实 API) ===
+const stats = [
+  { value: 23, label: '设备总数', trend: 'up' as const, trendValue: '+2 本周', accent: 'primary' as const, icon: Cpu },
+  { value: 19, label: '在线设备', trend: 'flat' as const, description: '4 离线', accent: 'success' as const, icon: Activity },
+  { value: 156, label: '今日对话', trend: 'up' as const, trendValue: '+18% 较昨日', accent: 'primary' as const, icon: MessageCircle },
+  { value: 432, label: '唤醒次数', trend: 'up' as const, trendValue: '+5.2%', accent: 'accent' as const, icon: Zap }
+]
 
-export default {
-  name: 'HomePage',
-  components: { DeviceItem, AddWisdomBodyDialog, HeaderBar, VersionFooter, ChatHistoryDialog },
-  data() {
-    return {
-      addDeviceDialogVisible: false,
-      devices: [],
-      originalDevices: [],
-      isSearching: false,
-      searchRegex: null,
-      isLoading: true,
-      skeletonCount: localStorage.getItem('skeletonCount') || 8,
-      showChatHistory: false,
-      currentAgentId: '',
-      currentAgentName: '',
-      // 功能状态
-      featureStatus: {
-        voiceprintRecognition: false,
-        voiceClone: false,
-        knowledgeBase: false
-      }
-    }
-  },
+const agents = [
+  { id: 'a1', name: '标准小智', role: '日常陪伴 · 通用问答', calls: 1248, enabled: true },
+  { id: 'a2', name: '厨房助手', role: '烹饪指导 · 计时提醒', calls: 342, enabled: true },
+  { id: 'a3', name: '医疗咨询', role: '症状问诊 · 药品查询', calls: 89, enabled: true },
+  { id: 'a4', name: '客服小智', role: '售后支持 · 工单处理', calls: 567, enabled: false },
+  { id: 'a5', name: '故事姐姐', role: '儿童故事 · 睡前陪伴', calls: 423, enabled: true },
+  { id: 'a6', name: '健身教练', role: '动作指导 · 训练计划', calls: 178, enabled: true }
+]
 
-  async mounted() {
-    this.fetchAgentList();
-    await this.loadFeatureStatus();
-  },
+const devices = [
+  { id: 'd1', name: '客厅音箱-01', mac: '11:22:33:44:55:66', status: 'online' as const, agent: '标准小智', callsToday: 23, wakesToday: 47, lastActive: '2 分钟前', signal: 'strong' as const },
+  { id: 'd2', name: '厨房音箱-01', mac: '11:22:33:44:55:67', status: 'online' as const, agent: '厨房助手', callsToday: 12, wakesToday: 28, lastActive: '1 小时前', signal: 'strong' as const },
+  { id: 'd3', name: '卧室音箱-01', mac: '11:22:33:44:55:68', status: 'online' as const, agent: '故事姐姐', callsToday: 8, wakesToday: 14, lastActive: '30 分钟前', signal: 'medium' as const },
+  { id: 'd4', name: '书房音箱-01', mac: '11:22:33:44:55:69', status: 'offline' as const, agent: '标准小智', callsToday: 0, wakesToday: 0, lastActive: '3 天前', signal: 'offline' as const },
+  { id: 'd5', name: '主卧小智', mac: '11:22:33:44:55:70', status: 'error' as const, agent: '标准小智', callsToday: 5, wakesToday: 11, lastActive: '15 分钟前', signal: 'weak' as const },
+  { id: 'd6', name: '次卧音箱', mac: '11:22:33:44:55:71', status: 'online' as const, agent: '健身教练', callsToday: 6, wakesToday: 12, lastActive: '5 分钟前', signal: 'strong' as const }
+]
 
-  methods: {
-    // 加载功能状态
-    async loadFeatureStatus() {
-      await featureManager.waitForInitialization();
-      const config = featureManager.getConfig();
-      this.featureStatus = {
-        voiceprintRecognition: config.voiceprintRecognition,
-        voiceClone: config.voiceClone,
-        knowledgeBase: config.knowledgeBase
-      };
-    },
-    
-    showAddDialog() {
-      this.addDeviceDialogVisible = true
-    },
-    goToRoleConfig() {
-      // 点击配置角色后跳转到角色配置页
-      this.$router.push('/role-config')
-    },
-    handleWisdomBodyAdded(res) {
-      this.fetchAgentList();
-      this.addDeviceDialogVisible = false;
-    },
-    handleDeviceManage() {
-      this.$router.push('/device-management');
-    },
-    handleSearch(keyword) {
-      this.isSearching = true;
-      this.isLoading = true;
-      // 检测MAC地址格式：包含4个冒号
-      const isMac = /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(keyword)
-      const searchType = isMac ? 'mac' : 'name';
-      Api.agent.searchAgent(keyword, searchType, ({ data }) => {
-        if (data?.data) {
-          this.devices = data.data.map(item => ({
-            ...item,
-            agentId: item.id
-          }));
-        }
-        this.isLoading = false;
-      }, (error) => {
-        console.error('搜索智能体失败:', error);
-        this.isLoading = false;
-        this.$message.error(this.$t('message.searchFailed'));
-      });
-    },
-    handleSearchReset() {
-      this.isSearching = false;
-      // 直接将原始设备列表赋值给显示设备列表，避免重新加载数据
-      this.devices = [...this.originalDevices];
-    },
+const visibleAgents = computed(() => agents.slice(0, 4))
+const visibleDevices = computed(() => devices.slice(0, 4))
 
-    // 搜索更新智能体列表
-    handleSearchResult(filteredList) {
-      this.devices = filteredList; // 更新设备列表
-    },
-    // 获取智能体列表
-    fetchAgentList() {
-      this.isLoading = true;
-      Api.agent.getAgentList(({ data }) => {
-        if (data?.data) {
-          this.originalDevices = data.data.map(item => ({
-            ...item,
-            agentId: item.id
-          }));
+function goMoreAgents() {
+  router.push('/agent-template-management')
+}
 
-          // 动态设置骨架屏数量（可选）
-          this.skeletonCount = Math.min(
-            Math.max(this.originalDevices.length, 3), // 最少3个
-            10 // 最多10个
-          );
-
-          this.handleSearchReset();
-        }
-        this.isLoading = false;
-      }, (error) => {
-        console.error('Failed to fetch agent list:', error);
-        this.isLoading = false;
-      });
-    },
-    // 删除智能体
-    handleDeleteAgent(agentId) {
-      this.$confirm(this.$t('home.confirmDeleteAgent'), '提示', {
-        confirmButtonText: this.$t('button.ok'),
-        cancelButtonText: this.$t('button.cancel'),
-        type: 'warning'
-      }).then(() => {
-        Api.agent.deleteAgent(agentId, (res) => {
-          if (res.data.code === 0) {
-            this.$message.success({
-              message: this.$t('home.deleteSuccess'),
-              showClose: true
-            });
-            this.fetchAgentList(); // 刷新列表
-          } else {
-            this.$message.error({
-              message: res.data.msg || this.$t('home.deleteFailed'),
-              showClose: true
-            });
-          }
-        });
-      }).catch(() => { });
-    },
-    handleShowChatHistory({ agentId, agentName }) {
-      this.currentAgentId = agentId;
-      this.currentAgentName = agentName;
-      this.showChatHistory = true;
-    }
-  }
+function goMoreDevices() {
+  router.push('/device-management')
 }
 </script>
 
-<style scoped>
-.welcome {
-  min-width: 900px;
-  min-height: 506px;
-  height: 100vh;
+<template>
+  <div class="home-page" :class="`bp-${breakpoint}`">
+    <div class="greeting">
+      <div class="greeting-text">
+        <h1 class="greeting-title">
+          <Sparkles :size="20" class="sparkle" />
+          早,小智在线
+        </h1>
+        <p class="greeting-sub">家里一切正常,共 19 台设备在线</p>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <StatCard
+        v-for="(s, i) in stats"
+        :key="i"
+        :value="s.value"
+        :label="s.label"
+        :trend="s.trend"
+        :trend-value="s.trendValue"
+        :description="s.description"
+        :accent="s.accent"
+        :icon="s.icon"
+      />
+    </div>
+
+    <div class="matrix-section">
+      <section class="matrix-block">
+        <header class="matrix-header">
+          <div class="matrix-title">
+            <h2>智能体</h2>
+            <span class="count">{{ agents.length }}</span>
+          </div>
+          <button class="more-btn" @click="goMoreAgents">
+            <span>查看全部</span>
+            <ChevronRight :size="14" />
+          </button>
+        </header>
+        <div class="matrix-grid">
+          <AgentCard v-for="a in visibleAgents" :key="a.id" :agent="a" />
+        </div>
+      </section>
+
+      <section class="matrix-block">
+        <header class="matrix-header">
+          <div class="matrix-title">
+            <h2>设备</h2>
+            <span class="count">{{ devices.length }}</span>
+          </div>
+          <button class="more-btn" @click="goMoreDevices">
+            <span>查看全部</span>
+            <ChevronRight :size="14" />
+          </button>
+        </header>
+        <div class="matrix-grid">
+          <DeviceCard v-for="d in visibleDevices" :key="d.id" :device="d" />
+        </div>
+      </section>
+    </div>
+
+    <section class="stream-section">
+      <LiveStream />
+    </section>
+  </div>
+</template>
+
+<style scoped lang="scss">
+@use '@/theme/breakpoints' as *;
+
+.home-page {
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(145deg, #e6eeff, #eff0ff);
-  background-size: cover;
-  /* 确保背景图像覆盖整个元素 */
-  background-position: center;
-  /* 从顶部中心对齐 */
-  -webkit-background-size: cover;
-  /* 兼容老版本WebKit浏览器 */
-  -o-background-size: cover;
-  /* 兼容老版本Opera浏览器 */
-}
+  gap: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
 
-.add-device {
-  height: 195px;
-  border-radius: 15px;
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(269.62deg,
-      #e0e6fd 0%,
-      #cce7ff 49.69%,
-      #d3d3fe 100%);
-}
-
-.add-device-bg {
-  width: 100%;
-  height: 100%;
-  text-align: left;
-  background-image: url("@/assets/home/main-top-bg.png");
-  overflow: hidden;
-  background-size: cover;
-  /* 确保背景图像覆盖整个元素 */
-  background-position: center;
-  /* 从顶部中心对齐 */
-  -webkit-background-size: cover;
-  /* 兼容老版本WebKit浏览器 */
-  -o-background-size: cover;
-  box-sizing: border-box;
-
-  /* 兼容老版本Opera浏览器 */
-  .hellow-text {
-    margin-left: 75px;
-    color: #3d4566;
-    font-size: 33px;
-    font-weight: 700;
-    letter-spacing: 0;
-  }
-
-  .hi-hint {
-    font-weight: 400;
-    font-size: 12px;
-    text-align: left;
-    color: #818cae;
-    margin-left: 75px;
-    margin-top: 5px;
+  @include mobile {
+    padding: 16px;
+    gap: 16px;
   }
 }
 
-.add-device-btn {
+.greeting-title {
   display: flex;
   align-items: center;
-  margin-left: 75px;
-  margin-top: 15px;
-  cursor: pointer;
-
-  .left-add {
-    padding: 0 14px;
-    height: 34px;
-    border-radius: 17px;
-    background: #5778ff;
-    color: #fff;
-    font-size: 14px;
-    font-weight: 500;
-    text-align: center;
-    line-height: 34px;
-  }
-
-  .right-add {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: #5778ff;
-    margin-left: -6px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 4px;
 }
 
-.device-list-container {
+.sparkle {
+  color: var(--color-accent);
+}
+
+.greeting-sub {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: 30px;
-  padding: 30px 0;
-}
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
 
-/* 在 DeviceItem.vue 的样式中 */
-.device-item {
-  margin: 0 !important;
-  /* 避免冲突 */
-  width: auto !important;
-}
+  @include tablet {
+    grid-template-columns: repeat(3, 1fr);
+  }
 
-.footer {
-  font-size: 12px;
-  font-weight: 400;
-  margin-top: auto;
-  padding-top: 30px;
-  color: #979db1;
-  text-align: center;
-  /* 居中显示 */
-}
+  @include pad {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
-/* 骨架屏动画 */
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
+  @include mobile {
+    grid-template-columns: 1fr;
   }
 }
 
-.skeleton-item {
-  background: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  height: 120px;
-  position: relative;
-  overflow: hidden;
-  margin-bottom: 20px;
+.matrix-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+
+  @include pad {
+    grid-template-columns: 1fr;
+  }
 }
 
-.skeleton-image {
-  width: 80px;
-  height: 80px;
-  background: #f0f2f5;
-  border-radius: 4px;
-  float: left;
-  position: relative;
-  overflow: hidden;
+.matrix-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
 }
 
-.skeleton-content {
-  margin-left: 100px;
+.matrix-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.skeleton-line {
-  height: 16px;
-  background: #f0f2f5;
-  border-radius: 4px;
-  margin-bottom: 12px;
-  width: 70%;
-  position: relative;
-  overflow: hidden;
+.matrix-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+  }
 }
 
-.skeleton-line-short {
-  height: 12px;
-  background: #f0f2f5;
-  border-radius: 4px;
-  width: 50%;
+.count {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  padding: 1px 8px;
+  background: var(--color-bg-page);
+  border-radius: 9999px;
+  font-weight: 500;
 }
 
-.skeleton-item::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(90deg,
-      rgba(255, 255, 255, 0),
-      rgba(255, 255, 255, 0.3),
-      rgba(255, 255, 255, 0));
-  animation: shimmer 1.5s infinite;
+.more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 120ms var(--ease-standard);
+
+  &:hover {
+    color: var(--color-primary);
+    background: var(--color-primary-light);
+  }
+}
+
+.matrix-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, 1fr);
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stream-section {
+  min-height: 360px;
 }
 </style>

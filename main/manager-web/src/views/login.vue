@@ -1,443 +1,575 @@
+<script setup lang="ts">
+import { ref, reactive, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Sparkles, Eye, EyeOff, LogIn } from 'lucide-vue-next'
+import { ElInput, ElCheckbox, ElButton } from 'element-plus'
+import { useAuthStore } from '@/stores/auth'
+import { useConfigStore } from '@/stores/config'
+import { useToast } from '@/composables/useToast'
+import { useBreakpoint } from '@/composables/useBreakpoint'
+
+const router = useRouter()
+const route = useRoute()
+const auth = useAuthStore()
+const config = useConfigStore()
+const toast = useToast()
+const { isMobile } = useBreakpoint()
+
+const form = reactive({
+  username: '',
+  password: '',
+  remember: false
+})
+
+const showPassword = ref(false)
+const submitting = ref(false)
+const errors = reactive<{ username?: string; password?: string }>({})
+
+function validate() {
+  errors.username = undefined
+  errors.password = undefined
+  if (!form.username.trim()) {
+    errors.username = '请输入用户名'
+    return false
+  }
+  if (!form.password) {
+    errors.password = '请输入密码'
+    return false
+  }
+  if (form.password.length < 6) {
+    errors.password = '密码至少 6 位'
+    return false
+  }
+  return true
+}
+
+async function handleSubmit() {
+  if (!validate()) return
+  submitting.value = true
+  try {
+    const result: any = await auth.login({ username: form.username, password: form.password })
+    const sourceLabel = result.source === 'mock' ? ' (Mock 模式)' : ''
+    toast.success(`欢迎回来,${auth.username || form.username}${sourceLabel}`)
+    const redirect = (route.query.redirect as string) || '/home'
+    router.push(redirect)
+  } catch (e: any) {
+    toast.error(e.message || '登录失败')
+  } finally {
+    submitting.value = false
+  }
+}
+
+function goRegister() {
+  router.push('/register')
+}
+
+function goRetrieve() {
+  router.push('/retrieve-password')
+}
+
+onMounted(async () => {
+  try {
+    await config.fetchPubConfig()
+  } catch {
+    // 静默
+  }
+})
+</script>
+
 <template>
-  <div class="welcome">
-    <el-container style="height: 100%">
-      <el-header>
-        <div style="
-            display: flex;
-            align-items: center;
-            margin-top: 11px;
-            margin-left: 11px;
-            gap: 10px;
-          ">
-          <img loading="lazy" alt="" src="@/assets/xiaozhi-logo.png" style="width: 42px; height: 42px" />
-          <img loading="lazy" alt="" :src="xiaozhiAiIcon" style="height: 20px" />
+  <div class="login-page" :class="{ 'is-mobile': isMobile }">
+    <div class="brand-side">
+      <div class="brand-inner">
+        <div class="brand-logo">
+          <Sparkles :size="32" class="sparkle" />
         </div>
-      </el-header>
-      <div class="login-person">
-        <img loading="lazy" alt="" src="@/assets/login/login-person.png" style="width: 100%" />
+        <h1 class="brand-title">小智智控台</h1>
+        <p class="brand-tagline">智能硬件管理中心</p>
+
+        <ul class="features">
+          <li>· 实时设备状态监控</li>
+          <li>· 多智能体协同管理</li>
+          <li>· 声纹识别与知识库</li>
+          <li>· 流式 ASR / TTS 配置</li>
+        </ul>
       </div>
-      <el-main style="position: relative">
-        <div class="login-box" @keyup.enter="login">
-          <div style="
-              display: flex;
-              align-items: center;
-              gap: 20px;
-              margin-bottom: 39px;
-              padding: 0 30px;
-            ">
-            <img loading="lazy" alt="" src="@/assets/login/hi.png" style="width: 34px; height: 34px" />
-            <div class="login-text">{{ $t("login.title") }}</div>
+    </div>
 
-            <div class="login-welcome">
-              {{ $t("login.welcome") }}
-            </div>
-
-            <!-- 语言切换下拉菜单 -->
-            <el-dropdown trigger="click" class="title-language-dropdown"
-              @visible-change="handleLanguageDropdownVisibleChange">
-              <span class="el-dropdown-link">
-                <span class="current-language-text">{{ currentLanguageText }}</span>
-                <i class="el-icon-arrow-down el-icon--right" :class="{ 'rotate-down': languageDropdownVisible }"></i>
-              </span>
-              <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item @click.native="changeLanguage('zh_CN')">
-                  {{ $t("language.zhCN") }}
-                </el-dropdown-item>
-                <el-dropdown-item @click.native="changeLanguage('zh_TW')">
-                  {{ $t("language.zhTW") }}
-                </el-dropdown-item>
-                <el-dropdown-item @click.native="changeLanguage('en')">
-                  {{ $t("language.en") }}
-                </el-dropdown-item>
-                <el-dropdown-item @click.native="changeLanguage('de')">
-                  {{ $t("language.de") }}
-                </el-dropdown-item>
-                <el-dropdown-item @click.native="changeLanguage('vi')">
-                  {{ $t("language.vi") }}
-                </el-dropdown-item>
-                <el-dropdown-item @click.native="changeLanguage('pt_BR')">
-                  {{ $t("language.ptBR") }}
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </el-dropdown>
-          </div>
-          <div style="padding: 0 30px">
-            <!-- 用户名登录 -->
-            <template v-if="!isMobileLogin">
-              <div class="input-box">
-                <img loading="lazy" alt="" class="input-icon" src="@/assets/login/username.png" />
-                <el-input v-model="form.username" :placeholder="$t('login.usernamePlaceholder')" />
-              </div>
-            </template>
-
-            <!-- 手机号登录 -->
-            <template v-else>
-              <div class="input-box">
-                <div style="display: flex; align-items: center; width: 100%">
-                  <el-select v-model="form.areaCode" style="width: 220px; margin-right: 10px">
-                    <el-option v-for="item in mobileAreaList" :key="item.key" :label="`${item.name} (${item.key})`"
-                      :value="item.key" />
-                  </el-select>
-                  <el-input v-model="form.mobile" :placeholder="$t('login.mobilePlaceholder')" />
-                </div>
-              </div>
-            </template>
-
-            <div class="input-box">
-              <img loading="lazy" alt="" class="input-icon" src="@/assets/login/password.png" />
-              <el-input v-model="form.password" :placeholder="$t('login.passwordPlaceholder')" type="password"
-                show-password />
-            </div>
-            <div style="
-                display: flex;
-                align-items: center;
-                margin-top: 20px;
-                width: 100%;
-                gap: 10px;
-              ">
-              <div class="input-box" style="width: calc(100% - 130px); margin-top: 0">
-                <img loading="lazy" alt="" class="input-icon" src="@/assets/login/shield.png" />
-                <el-input v-model="form.captcha" :placeholder="$t('login.captchaPlaceholder')" style="flex: 1" />
-              </div>
-              <img loading="lazy" v-if="captchaUrl" :src="captchaUrl" alt="验证码"
-                style="width: 150px; height: 40px; cursor: pointer" @click="fetchCaptcha" />
-            </div>
-            <div style="
-                font-weight: 400;
-                font-size: 14px;
-                text-align: left;
-                color: #5778ff;
-                display: flex;
-                justify-content: space-between;
-                margin-top: 20px;
-              ">
-              <div v-if="allowUserRegister" style="cursor: pointer" @click="goToRegister">
-                {{ $t("login.register") }}
-              </div>
-              <div style="cursor: pointer" @click="goToForgetPassword" v-if="enableMobileRegister">
-                {{ $t("login.forgetPassword") }}
-              </div>
-            </div>
-          </div>
-          <div class="login-btn" @click="login">{{ $t("login.login") }}</div>
-
-          <!-- 登录方式切换按钮 -->
-          <div class="login-type-container" v-if="enableMobileRegister">
-            <div style="display: flex; gap: 10px">
-              <el-tooltip :content="$t('login.mobileLogin')" placement="bottom">
-                <el-button :type="isMobileLogin ? 'primary' : 'default'" icon="el-icon-mobile" circle
-                  @click="switchLoginType('mobile')"></el-button>
-              </el-tooltip>
-              <el-tooltip :content="$t('login.usernameLogin')" placement="bottom">
-                <el-button :type="!isMobileLogin ? 'primary' : 'default'" icon="el-icon-user" circle
-                  @click="switchLoginType('username')"></el-button>
-              </el-tooltip>
-            </div>
-          </div>
-          <div style="font-size: 14px; color: #979db1">
-            {{ $t("login.agreeTo") }}
-            <div style="display: inline-block; color: #5778ff; cursor: pointer" @click="openPage('/user-agreement.html')">
-              {{ $t("login.userAgreement") }}
-            </div>
-            {{ $t("login.and") }}
-            <div style="display: inline-block; color: #5778ff; cursor: pointer" @click="openPage('/privacy-policy.html')">
-              {{ $t("login.privacyPolicy") }}
-            </div>
-          </div>
+    <div class="form-side">
+      <div class="form-wrap">
+        <div class="form-header">
+          <h2 class="form-title">登录</h2>
+          <p class="form-subtitle">使用您的账号继续</p>
         </div>
-      </el-main>
-      <el-footer>
-        <version-footer />
-      </el-footer>
-    </el-container>
+
+        <form class="form" @submit.prevent="handleSubmit">
+          <div class="field">
+            <label class="label" for="username">用户名</label>
+            <ElInput
+              id="username"
+              v-model="form.username"
+              size="large"
+              placeholder="请输入用户名"
+              autocomplete="username"
+              :disabled="submitting"
+              :status="errors.username ? 'error' : ''"
+              clearable
+            />
+            <span v-if="errors.username" class="error-msg">{{ errors.username }}</span>
+          </div>
+
+          <div class="field">
+            <label class="label" for="password">密码</label>
+            <ElInput
+              id="password"
+              v-model="form.password"
+              size="large"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="请输入密码"
+              autocomplete="current-password"
+              :disabled="submitting"
+              :status="errors.password ? 'error' : ''"
+            >
+              <template #suffix>
+                <button
+                  type="button"
+                  class="toggle-pwd"
+                  :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+                  @click="showPassword = !showPassword"
+                >
+                  <Eye v-if="!showPassword" :size="16" />
+                  <EyeOff v-else :size="16" />
+                </button>
+              </template>
+            </ElInput>
+            <span v-if="errors.password" class="error-msg">{{ errors.password }}</span>
+          </div>
+
+          <div class="row-between">
+            <ElCheckbox v-model="form.remember">记住我</ElCheckbox>
+            <button type="button" class="link" @click="goRetrieve">忘记密码?</button>
+          </div>
+
+          <ElButton
+            type="primary"
+            size="large"
+            native-type="submit"
+            class="submit-btn"
+            :loading="submitting"
+            style="--el-button-bg-color: #4F6BFF; --el-button-border-color: #4F6BFF; --el-button-hover-bg-color: #3A52E0; --el-button-hover-border-color: #3A52E0; --el-button-active-bg-color: #2A3DB8; --el-button-active-border-color: #2A3DB8;"
+          >
+            <template #loading>
+              <span class="loading-content">
+                <span class="dot"></span>
+                <span>登录中…</span>
+              </span>
+            </template>
+            <span v-if="!submitting" class="btn-content">
+              <LogIn :size="16" />
+              <span>登录</span>
+            </span>
+            <span v-else>登录中…</span>
+          </ElButton>
+        </form>
+
+        <div class="form-footer">
+          <span>还没有账号?</span>
+          <button class="link" @click="goRegister">立即注册</button>
+        </div>
+
+        <p v-if="config.version" class="version">v{{ config.version }}</p>
+      </div>
+    </div>
   </div>
 </template>
 
-<script>
-import Api from "@/apis/api";
-import VersionFooter from "@/components/VersionFooter.vue";
-import i18n, { changeLanguage } from "@/i18n";
-import { getUUID, goToPage, showDanger, showSuccess, sm2Encrypt, validateMobile } from "@/utils";
-import { mapState } from "vuex";
-import featureManager from "@/utils/featureManager";
+<style scoped lang="scss">
+@use '@/theme/breakpoints' as *;
 
-export default {
-  name: "login",
-  components: {
-    VersionFooter,
-  },
-  computed: {
-    ...mapState({
-      allowUserRegister: (state) => state.pubConfig.allowUserRegister,
-      enableMobileRegister: (state) => state.pubConfig.enableMobileRegister,
-      mobileAreaList: (state) => state.pubConfig.mobileAreaList,
-      sm2PublicKey: (state) => state.pubConfig.sm2PublicKey,
-    }),
-    // 获取当前语言
-    currentLanguage() {
-      return i18n.locale || "zh_CN";
-    },
-    // 获取当前语言显示文本
-    currentLanguageText() {
-      const currentLang = this.currentLanguage;
-      switch (currentLang) {
-        case "zh_CN":
-          return this.$t("language.zhCN");
-        case "zh_TW":
-          return this.$t("language.zhTW");
-        case "en":
-          return this.$t("language.en");
-        case "de":
-          return this.$t("language.de");
-        case "vi":
-          return this.$t("language.vi");
-        case "pt_BR":
-          return this.$t("language.ptBR");
-        default:
-          return this.$t("language.zhCN");
-      }
-    },
-    // 根据当前语言获取对应的xiaozhi-ai图标
-    xiaozhiAiIcon() {
-      const currentLang = this.currentLanguage;
-      switch (currentLang) {
-        case "zh_CN":
-          return require("@/assets/xiaozhi-ai.png");
-        case "zh_TW":
-          return require("@/assets/xiaozhi-ai_zh_TW.png");
-        case "en":
-          return require("@/assets/xiaozhi-ai_en.png");
-        case "de":
-          return require("@/assets/xiaozhi-ai_de.png");
-        case "vi":
-          return require("@/assets/xiaozhi-ai_vi.png");
-        default:
-          return require("@/assets/xiaozhi-ai.png");
-      }
-    },
-  },
-  data() {
-    return {
-      activeName: "username",
-      form: {
-        username: "",
-        password: "",
-        captcha: "",
-        captchaId: "",
-        areaCode: "+86",
-        mobile: "",
-      },
-      captchaUuid: "",
-      captchaUrl: "",
-      isMobileLogin: false,
-      languageDropdownVisible: false,
-    };
-  },
-  mounted() {
-    this.fetchCaptcha();
-    this.$store.dispatch("fetchPubConfig").then(() => {
-      // 根据配置决定默认登录方式
-      this.isMobileLogin = this.enableMobileRegister;
-    });
-  },
-  methods: {
-    openPage(url) {
-      const lang = this.$i18n ? this.$i18n.locale : 'zh_CN';
-      if (!lang.startsWith('zh')) {
-        url = url.replace('.html', '-en.html');
-      }
-      window.open(url, '_blank');
-    },
-    fetchCaptcha() {
-      // 处理手动清空localstorage导致无法获取验证码的问题
-      const token = localStorage.getItem('token')
-      if (token) {
-        if (this.$route.path !== "/home") {
-          this.$router.push("/home");
-        }
-      } else {
-        this.captchaUuid = getUUID();
-
-        Api.user.getCaptcha(this.captchaUuid, (res) => {
-          if (res.status === 200) {
-            const blob = new Blob([res.data], { type: res.data.type });
-            this.captchaUrl = URL.createObjectURL(blob);
-          } else {
-            showDanger("验证码加载失败，点击刷新");
-          }
-        });
-      }
-    },
-
-    // 切换语言下拉菜单的可见状态变化
-    handleLanguageDropdownVisibleChange(visible) {
-      this.languageDropdownVisible = visible;
-    },
-
-    // 切换语言
-    changeLanguage(lang) {
-      changeLanguage(lang);
-      this.languageDropdownVisible = false;
-      this.$message.success({
-        message: this.$t("message.success"),
-        showClose: true,
-      });
-    },
-
-    // 切换登录方式
-    switchLoginType(type) {
-      this.isMobileLogin = type === "mobile";
-      // 清空表单
-      this.form.username = "";
-      this.form.mobile = "";
-      this.form.password = "";
-      this.form.captcha = "";
-      this.fetchCaptcha();
-    },
-
-    // 封装输入验证逻辑
-    validateInput(input, messageKey) {
-      if (!input.trim()) {
-        showDanger(this.$t(messageKey));
-        return false;
-      }
-      return true;
-    },
-    
-    getUserInfo() {
-      Api.user.getUserInfo(({ data }) => {
-        if (data.code === 0) {
-          this.$store.commit("setUserInfo", data.data);
-          goToPage("/home");
-        } else {
-          showDanger("用户信息获取失败");
-        }
-      });
-    },
-
-    async login() {
-      if (this.isMobileLogin) {
-        // 手机号登录验证
-        if (!validateMobile(this.form.mobile, this.form.areaCode)) {
-          showDanger(this.$t('login.requiredMobile'));
-          return;
-        }
-        // 拼接手机号作为用户名
-        this.form.username = this.form.areaCode + this.form.mobile;
-      } else {
-        // 用户名登录验证
-        if (!this.validateInput(this.form.username, 'login.requiredUsername')) {
-          return;
-        }
-      }
-
-      // 验证密码
-      if (!this.validateInput(this.form.password, 'login.requiredPassword')) {
-        return;
-      }
-      // 验证验证码
-      if (!this.validateInput(this.form.captcha, 'login.requiredCaptcha')) {
-        return;
-      }
-      // 加密密码
-      let encryptedPassword;
-      try {
-        // 拼接验证码和密码
-        const captchaAndPassword = this.form.captcha + this.form.password;
-        encryptedPassword = sm2Encrypt(this.sm2PublicKey, captchaAndPassword);
-      } catch (error) {
-        console.error("密码加密失败:", error);
-        showDanger(this.$t('sm2.encryptionFailed'));
-        return;
-      }
-
-      const plainUsername = this.form.username;
-
-      this.form.captchaId = this.captchaUuid;
-
-      // 加密
-      const loginData = {
-        username: plainUsername,
-        password: encryptedPassword,
-        captchaId: this.form.captchaId
-      };
-
-      Api.user.login(
-        loginData,
-        ({ data }) => {
-          showSuccess(this.$t('login.loginSuccess'));
-          this.$store.commit("setToken", JSON.stringify(data.data));
-          this.getUserInfo();
-        },
-        (err) => {
-          // 直接使用后端返回的国际化消息
-          let errorMessage = err.data.msg || "登录失败";
-
-          showDanger(errorMessage);
-        }
-      );
-
-      // 重新获取验证码
-      setTimeout(() => {
-        this.fetchCaptcha();
-      }, 1000);
-    },
-
-    goToRegister() {
-      goToPage("/register");
-    },
-    goToForgetPassword() {
-      goToPage("/retrieve-password");
-    }
-  },
-};
-</script>
-<style lang="scss" scoped>
-@import "./auth.scss";
-
-.login-type-container {
-  margin: 10px 20px;
+.login-page {
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
+  flex-direction: row;
+  background: var(--color-bg-page);
+  width: 100%;
+
+  @include mobile {
+    flex-direction: column;
+  }
+}
+
+.brand-side {
+  flex: 1;
+  background: var(--color-bg-sidebar);
+  color: var(--color-text-on-dark);
+  display: flex;
+  align-items: center;
   justify-content: center;
-}
+  padding: 40px;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
 
-.title-language-dropdown {
-  margin-left: auto;
-}
-
-.current-language-text {
-  margin-left: 4px;
-  margin-right: 4px;
-  font-size: 12px;
-  color: #3d4566;
-}
-
-.language-dropdown {
-  margin-left: auto;
-}
-
-.rotate-down {
-  transform: rotate(180deg);
-  transition: transform 0.3s ease;
-}
-
-.el-icon-arrow-down {
-  transition: transform 0.3s ease;
-}
-
-:deep(.el-button--primary) {
-  background-color: #5778ff;
-  border-color: #5778ff;
-
-  &:hover,
-  &:focus {
-    background-color: #4a6ae8;
-    border-color: #4a6ae8;
+  @include mobile {
+    min-height: auto;
+    padding: 32px 20px;
   }
 
-  &:active {
-    background-color: #3d5cd6;
-    border-color: #3d5cd6;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 40%, rgba(79, 107, 255, 0.25), transparent 50%);
+  }
+}
+
+.brand-inner {
+  position: relative;
+  max-width: 380px;
+}
+
+.brand-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.sparkle {
+  color: var(--color-accent);
+}
+
+.brand-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+
+.brand-tagline {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 40px;
+}
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  list-style: none;
+  padding: 0;
+}
+
+.form-side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: var(--color-bg-page);
+  min-width: 0;
+
+  @include mobile {
+    min-height: auto;
+    padding: 32px 20px;
+  }
+}
+
+// Element Plus 局部覆盖(scoped 必须用 :deep)
+:deep(.el-input) {
+  width: 100% !important;
+}
+
+:deep(.el-input__wrapper) {
+  background-color: var(--color-bg-surface) !important;
+  box-shadow: none !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 8px !important;
+  padding: 0 14px !important;
+  outline: none !important;
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+:deep(.el-input__wrapper:hover) {
+  border-color: var(--color-primary) !important;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(79, 107, 255, 0.12) !important;
+}
+
+/* 关键:隐藏 input 原生 outline + box-shadow,避免双框 */
+:deep(.el-input__inner) {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none !important;
+  background: transparent !important;
+  height: 44px !important;
+  line-height: 44px !important;
+  font-size: 14px !important;
+  color: var(--color-text-primary) !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+:deep(.el-input__inner:focus) {
+  outline: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+/* 隐藏 ElInput 内部的 .el-input-box(有些版本有这个嵌套 div) */
+:deep(.el-input__box),
+:deep(.el-input__box-inner) {
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* 密码眼睛按钮(在 suffix 槽里)— 强制垂直居中 */
+:deep(.el-input__suffix) {
+  display: flex !important;
+  align-items: center !important;
+  height: 100% !important;
+  right: 14px !important;
+  top: 0 !important;
+}
+
+:deep(.el-input__suffix-inner) {
+  display: flex !important;
+  align-items: center !important;
+  height: 100% !important;
+}
+
+:deep(.toggle-pwd) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  color: var(--color-text-tertiary) !important;
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+}
+
+:deep(.toggle-pwd:hover) {
+  color: var(--color-text-primary) !important;
+}
+
+:deep(.el-input__inner) {
+  color: var(--color-text-primary) !important;
+  height: 44px !important;
+  line-height: 44px !important;
+  font-size: 14px !important;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: var(--color-text-tertiary) !important;
+}
+
+:deep(.el-checkbox__inner) {
+  border-color: var(--color-border-strong) !important;
+  background-color: var(--color-bg-surface) !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+:deep(.el-checkbox__inner::after) {
+  border-color: #FFFFFF !important;
+  left: 4px !important;
+  top: 1px !important;
+}
+
+:deep(.el-checkbox__label) {
+  color: var(--color-text-secondary) !important;
+  font-size: 13px !important;
+}
+
+.form-wrap {
+  width: 100%;
+  max-width: 380px;
+}
+
+.form-header {
+  margin-bottom: 32px;
+}
+
+.form-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 6px;
+}
+
+.form-subtitle {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.error-msg {
+  font-size: 12px;
+  color: var(--color-danger);
+  margin-top: 2px;
+}
+
+.toggle-pwd {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 120ms var(--ease-standard);
+
+  &:hover {
+    color: var(--color-text-primary);
+  }
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-top: -4px;
+}
+
+.link {
+  color: var(--color-primary);
+  font-size: 13px;
+  transition: color 120ms var(--ease-standard);
+
+  &:hover {
+    color: var(--color-primary-hover);
+  }
+}
+
+.submit-btn {
+  width: 100%;
+  height: 44px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.submit-btn :deep(span) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.version {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--color-text-tertiary);
+}
+
+/* === 强制覆盖 ElButton 主色(最高优先级) === */
+:deep(.submit-btn.el-button) {
+  width: 100% !important;
+  height: 44px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  margin-top: 8px !important;
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: #FFFFFF !important;
+}
+
+:deep(.submit-btn.el-button:hover) {
+  background-color: var(--color-primary-hover) !important;
+  border-color: var(--color-primary-hover) !important;
+}
+
+:deep(.submit-btn.el-button:active) {
+  background-color: var(--color-primary-active) !important;
+  border-color: var(--color-primary-active) !important;
+}
+
+:deep(.submit-btn.el-button:focus-visible) {
+  outline: 2px solid var(--color-primary-light-3) !important;
+  outline-offset: 2px !important;
+}
+
+.btn-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.is-mobile {
+  .brand-side {
+    padding: 32px 20px;
+  }
+
+  .brand-title {
+    font-size: 24px;
+  }
+
+  .brand-tagline {
+    margin-bottom: 0;
+  }
+
+  .features {
+    display: none;
+  }
+
+  .form-side {
+    padding: 32px 20px;
   }
 }
 </style>

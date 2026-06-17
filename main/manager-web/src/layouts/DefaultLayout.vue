@@ -6,7 +6,7 @@ import PadTopTabs from './PadTopTabs.vue'
 import MobileHeader from './MobileHeader.vue'
 import MobileTabBar from './MobileTabBar.vue'
 
-const { isMobile, isPad, isDesktop } = useBreakpoint()
+const { isMobile, isPad, isTablet, isDesktop } = useBreakpoint()
 </script>
 
 <template>
@@ -27,7 +27,7 @@ const { isMobile, isPad, isDesktop } = useBreakpoint()
     </template>
 
     <!-- Pad (640-1023) : 顶部 Tab + 顶栏 -->
-    <template v-else-if="isPad">
+    <template v-else-if="isPad || isTablet">
       <header class="app-pad-tabs">
         <PadTopTabs />
       </header>
@@ -42,7 +42,7 @@ const { isMobile, isPad, isDesktop } = useBreakpoint()
     </template>
 
     <!-- 手机 (< 640) : 极简顶栏 + 内容 + 底部 Tab Bar -->
-    <template v-else>
+    <template v-else-if="isMobile">
       <header class="app-mobile-header">
         <MobileHeader />
       </header>
@@ -53,6 +53,21 @@ const { isMobile, isPad, isDesktop } = useBreakpoint()
         <MobileTabBar />
       </nav>
     </template>
+
+    <!-- 宽屏 (≥ 1680) : 跟桌面一样但主区更宽 -->
+    <template v-else>
+      <aside class="app-sidebar">
+        <SidebarNav />
+      </aside>
+      <div class="app-main">
+        <header class="app-topbar">
+          <TopBar />
+        </header>
+        <main class="app-content">
+          <router-view />
+        </main>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -61,10 +76,19 @@ const { isMobile, isPad, isDesktop } = useBreakpoint()
 
 .app-shell {
   display: flex;
+  flex-direction: row;
   min-height: 100vh;
   min-height: 100dvh;
   background: var(--color-bg-page);
   color: var(--color-text-primary);
+  width: 100%;
+}
+
+// 手机/Pad(< 1024):手机/Pad 端无 sidebar,直接占满
+@media (max-width: 1023px) {
+  .app-shell {
+    flex-direction: column;
+  }
 }
 
 // === 桌面布局 ===
@@ -105,7 +129,7 @@ const { isMobile, isPad, isDesktop } = useBreakpoint()
 }
 
 .app-content--mobile {
-  padding-bottom: 16px;  // 给底部 Tab Bar 留位置
+  padding-bottom: 72px;  // 给底部 Tab Bar 留位置(56px + iOS Home 34px 安全)
 }
 
 // === Pad 布局 ===
