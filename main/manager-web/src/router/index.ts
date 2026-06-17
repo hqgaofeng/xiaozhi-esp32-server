@@ -125,7 +125,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/agent-template-management',
     name: 'AgentTemplateManagement',
-    component: () => import('@/views/LegacyView.vue'),
+    component: () => import('@/views/AgentTemplateManagement.vue'),
     meta: { title: '智能体模板', requiresAuth: true }
   },
   {
