@@ -1,0 +1,40 @@
+// theme/_breakpoints.scss
+// 5 档断点,基于 ui-ux-pro-max 设计规范
+// 与 Element Plus 默认断点 (xs/sm/md/lg/xl) 对齐
+
+// 断点阈值
+$bp-xs-max: 639px;       // < 640  : 手机
+$bp-sm-max: 1023px;      // 640-1023 : Pad
+$bp-md-max: 1279px;      // 1024-1279 : 平板/小桌面
+$bp-lg-max: 1679px;      // 1280-1679 : 标准桌面
+// ≥ 1680 : 宽屏
+
+$bp-sm-min: 640px;
+$bp-md-min: 1024px;
+$bp-lg-min: 1280px;
+$bp-xl-min: 1680px;
+
+// Mixin:@include mobile { ... }
+@mixin mobile {
+  @media (max-width: $bp-xs-max) { @content; }
+}
+
+@mixin pad {
+  @media (min-width: $bp-sm-min) and (max-width: $bp-sm-max) { @content; }
+}
+
+@mixin tablet {
+  @media (min-width: $bp-md-min) and (max-width: $bp-md-max) { @content; }
+}
+
+@mixin desktop {
+  @media (min-width: $bp-md-min) { @content; }
+}
+
+@mixin wide {
+  @media (min-width: $bp-xl-min) { @content; }
+}
+
+@mixin not-mobile {
+  @media (min-width: $bp-sm-min) { @content; }
+}

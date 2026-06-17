@@ -1,0 +1,122 @@
+/* styles/tokens.css
+   纯 CSS 变量定义,任何地方都能 var(--color-xxx) 直接用
+   不依赖 SCSS 编译,Vite 自动注入到 <head> */
+
+:root,
+html,
+html.dark,
+#app {
+  /* 主色:深空蓝紫 */
+  --color-primary: #4F6BFF;
+  --color-primary-hover: #3A52E0;
+  --color-primary-active: #2A3DB8;
+  --color-primary-light: #EEF1FF;
+  --color-primary-light-2: #DCE0FF;
+  --color-primary-light-3: #B8C0FF;
+  --color-primary-light-4: #8E9AFF;
+  --color-primary-light-5: #6B7AFF;
+  --color-primary-light-6: #B8C0FF;
+  --color-primary-light-7: #B8C0FF;
+  --color-primary-light-8: #DCE0FF;
+  --color-primary-light-9: #EEF1FF;
+  --color-primary-dark-2: #3A52E0;
+
+  /* 辅色:暖橙曙光 */
+  --color-accent: #FF7A45;
+  --color-accent-hover: #E5612A;
+  --color-accent-light: #FFE0D2;
+  --color-accent-light-3: #FF8E5F;
+  --color-accent-light-5: #FFA37A;
+  --color-accent-light-7: #FFC4A8;
+  --color-accent-light-8: #FFE0D2;
+  --color-accent-light-9: #FFF1EB;
+
+  /* 背景 */
+  --color-bg-page: #F7F8FB;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-sidebar: #0F1626;
+  --color-bg-code: #0F1626;
+
+  /* 文字 */
+  --color-text-primary: #1A1F2E;
+  --color-text-secondary: #5A6378;
+  --color-text-tertiary: #9AA3B5;
+  --color-text-on-dark: #FFFFFF;
+
+  /* 边框 */
+  --color-border: #DCE0E8;
+  --color-border-strong: #BFC5D1;
+  --color-divider: #EEF0F5;
+
+  /* 语义 */
+  --color-success: #34C759;
+  --color-success-light: #E8F8EE;
+  --color-warning: #FFB020;
+  --color-warning-light: #FFF5E0;
+  --color-danger: #FF4D4F;
+  --color-danger-light: #FFEBEC;
+  --color-info: #5AC8FA;
+  --color-info-light: #E5F6FF;
+
+  /* 间距 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* 圆角 */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px rgba(15, 22, 38, 0.04), 0 1px 3px rgba(15, 22, 38, 0.06);
+  --shadow-md: 0 4px 12px rgba(15, 22, 38, 0.06), 0 2px 4px rgba(15, 22, 38, 0.04);
+  --shadow-lg: 0 12px 32px rgba(15, 22, 38, 0.08), 0 4px 8px rgba(15, 22, 38, 0.04);
+  --shadow-xl: 0 24px 64px rgba(15, 22, 38, 0.12);
+  --shadow-glow: 0 0 0 4px rgba(79, 107, 255, 0.15);
+  --shadow-accent-glow: 0 0 0 4px rgba(255, 122, 69, 0.18);
+
+  /* 缓动 */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-medium: 240ms;
+  --dur-slow: 320ms;
+
+  /* 字体 */
+  --font-sans: "Inter", "PingFang SC", "Microsoft YaHei UI", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", Consolas, monospace;
+
+  /* === Element Plus 主题色覆盖 === */
+  --el-color-primary: #4F6BFF;
+  --el-color-primary-light-3: #6B7AFF;
+  --el-color-primary-light-5: #8E9AFF;
+  --el-color-primary-light-7: #B8C0FF;
+  --el-color-primary-light-8: #DCE0FF;
+  --el-color-primary-light-9: #EEF1FF;
+  --el-color-primary-dark-2: #3A52E0;
+  --el-color-success: #34C759;
+  --el-color-warning: #FFB020;
+  --el-color-danger: #FF4D4F;
+  --el-color-info: #5AC8FA;
+  --el-border-radius-base: 10px;
+  --el-font-family: "Inter", "PingFang SC", "Microsoft YaHei UI", sans-serif;
+  --el-transition-duration-fast: 120ms;
+  --el-transition-duration: 200ms;
+}
+
+/* 减少动效偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,17 @@
+// theme/_motion.scss
+
+// 缓动曲线
+$ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+$ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+$ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+$ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+
+// 持续时间
+$dur-fast:   120ms;  // hover, active, focus
+$dur-base:   200ms;  // 状态切换
+$dur-medium: 240ms;  // 弹窗/抽屉
+$dur-slow:   320ms;  // 页面切换
+
+// 心跳/唤醒(无障碍考虑)
+$dur-pulse:     1600ms;
+$dur-mic-ripple: 600ms;

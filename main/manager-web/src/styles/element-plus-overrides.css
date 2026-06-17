@@ -1,0 +1,406 @@
+/* styles/element-plus-overrides.css
+   Element Plus 主题统一重写
+   目标风格:Soft UI Evolution — 边细 / 光晕淡 / 高度统一 44px / 圆角小
+   优先级:html body > tokens.css > element-plus 默认
+   加载:App.vue import,顺序为 tokens.css → element-plus-overrides.css
+   Vite 自动把 import 的 CSS 注入到 <head>,且在 element-plus 默认样式之后
+   关键:用 html body 提升特异性,确保覆盖 Element Plus 的 :root */
+
+/* === 1. 主题色重定义(最高优先级) === */
+html body {
+  --el-color-primary: #4F6BFF;
+  --el-color-primary-light-3: #6B7AFF;
+  --el-color-primary-light-5: #8E9AFF;
+  --el-color-primary-light-7: #B8C0FF;
+  --el-color-primary-light-8: #DCE0FF;
+  --el-color-primary-light-9: #EEF1FF;
+  --el-color-primary-dark-2: #3A52E0;
+  --el-color-success: #34C759;
+  --el-color-success-light-9: #E8F8EE;
+  --el-color-warning: #FFB020;
+  --el-color-warning-light-9: #FFF5E0;
+  --el-color-danger: #FF4D4F;
+  --el-color-danger-light-9: #FFEBEC;
+  --el-color-info: #5AC8FA;
+  --el-color-info-light-9: #E5F6FF;
+  --el-border-radius-base: 10px;
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 9999px;
+  --el-font-family: "Inter", "PingFang SC", "Microsoft YaHei UI", sans-serif;
+  --el-transition-duration-fast: 120ms;
+  --el-transition-duration: 200ms;
+  --el-transition-duration-default: 200ms;
+  --el-fill-color-blank: #FFFFFF;
+  --el-fill-color-light: #F7F8FB;
+  --el-text-color-primary: #1A1F2E;
+  --el-text-color-regular: #1A1F2E;
+  --el-text-color-secondary: #5A6378;
+  --el-text-color-placeholder: #9AA3B5;
+  --el-border-color: #DCE0E8;
+  --el-border-color-light: #EEF0F5;
+  --el-border-color-lighter: #F7F8FB;
+  --el-border-color-extra-light: #F7F8FB;
+  --el-border-color-dark: #BFC5D1;
+}
+
+/* === 1.5 浏览器 autofill 覆盖(Chrome 会用蓝色/黄色填充已保存密码) === */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+input:-webkit-autofill:disabled {
+  -webkit-box-shadow: 0 0 0 30px var(--color-bg-surface) inset !important;
+  -webkit-text-fill-color: var(--color-text-primary) !important;
+  caret-color: var(--color-text-primary) !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+
+/* === 2. Input 输入框 === */
+.el-input {
+  --el-input-bg-color: var(--color-bg-surface);
+  --el-input-border-color: var(--color-border);
+  --el-input-hover-border-color: var(--color-primary);
+  --el-input-focus-border-color: var(--color-primary);
+  --el-input-text-color: var(--color-text-primary);
+  --el-input-placeholder-color: var(--color-text-tertiary);
+  --el-input-hover-color: var(--color-bg-surface);
+  --el-input-focus-color: var(--color-bg-surface);
+  --el-input-disabled-bg-color: var(--color-bg-page);
+  --el-input-disabled-border-color: var(--color-border);
+  --el-input-disabled-color: var(--color-text-tertiary);
+  --el-input-height: 44px;
+  --el-input-border-radius: var(--radius-sm);
+}
+
+.el-input__wrapper {
+  background-color: var(--color-bg-surface) !important;
+  box-shadow: none !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 8px !important;
+  padding: 0 14px !important;
+  transition: border-color 120ms var(--ease-standard), box-shadow 120ms var(--ease-standard) !important;
+  outline: none !important;
+}
+
+/* 关键:隐藏 input 原生 outline(浏览器焦点环) — 否则 focus 时会有双框 */
+.el-input__inner {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.el-input__inner:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.el-input__wrapper:hover {
+  border-color: var(--color-primary) !important;
+}
+
+.el-input__wrapper.is-focus {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(79, 107, 255, 0.12) !important;
+}
+
+.el-input.is-disabled .el-input__wrapper {
+  background-color: var(--color-bg-page) !important;
+  border-color: var(--color-border) !important;
+  cursor: not-allowed;
+}
+
+.el-input__inner {
+  color: var(--color-text-primary) !important;
+  height: 44px !important;
+  line-height: 44px !important;
+  font-size: 14px !important;
+  background: transparent !important;
+}
+
+.el-input__inner::placeholder {
+  color: var(--color-text-tertiary) !important;
+}
+
+.el-input.is-error .el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--color-danger) inset, 0 0 0 3px var(--color-danger-light) !important;
+}
+
+/* large 尺寸统一 */
+.el-input--large .el-input__wrapper {
+  padding: 0 14px !important;
+  min-height: 44px !important;
+}
+
+.el-input--large .el-input__inner {
+  font-size: 14px !important;
+}
+
+/* 密码眼睛按钮(在 suffix 槽里) */
+.el-input__suffix {
+  color: var(--color-text-tertiary);
+  align-items: center;
+}
+
+.el-input__suffix-inner {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+/* === 3. Checkbox 复选框 === */
+.el-checkbox {
+  --el-checkbox-text-color: var(--color-text-secondary);
+  --el-checkbox-input-border-color: var(--color-border-strong);
+  --el-checkbox-input-border-color-hover: var(--color-primary);
+  --el-checkbox-checked-bg-color: var(--color-primary);
+  --el-checkbox-checked-input-border-color: var(--color-primary);
+  --el-checkbox-checked-icon-color: #FFFFFF;
+  height: 22px;
+  white-space: nowrap;
+}
+
+.el-checkbox__input.is-checked + .el-checkbox__label {
+  color: var(--color-text-primary) !important;
+}
+
+.el-checkbox__label {
+  color: var(--color-text-secondary) !important;
+  font-size: 13px !important;
+  padding-left: 6px !important;
+}
+
+.el-checkbox__inner {
+  border-color: var(--color-border-strong) !important;
+  background-color: var(--color-bg-surface) !important;
+  width: 16px !important;
+  height: 16px !important;
+  transition: all 120ms var(--ease-standard) !important;
+}
+
+.el-checkbox__inner:hover {
+  border-color: var(--color-primary) !important;
+}
+
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.el-checkbox__inner::after {
+  border-color: #FFFFFF !important;
+  left: 4px !important;
+  top: 1px !important;
+}
+
+/* === 4. Button(全模块共用) === */
+.el-button {
+  --el-button-font-weight: 500;
+  --el-button-border-radius: var(--radius-sm);
+  --el-button-padding-vertical: 9px;
+  --el-button-padding-horizontal: 16px;
+  --el-button-text-color: var(--color-text-primary);
+  --el-button-bg-color: var(--color-bg-surface);
+  --el-button-border-color: var(--color-border);
+  --el-button-hover-text-color: var(--color-primary);
+  --el-button-hover-bg-color: var(--color-primary-light);
+  --el-button-hover-border-color: var(--color-primary-light);
+  --el-button-active-text-color: var(--color-primary-active);
+  --el-button-active-bg-color: var(--color-primary-light-2);
+  --el-button-active-border-color: var(--color-primary-light-2);
+  font-weight: 500;
+  transition: all 120ms var(--ease-standard);
+}
+
+.el-button--primary {
+  --el-button-text-color: #FFFFFF;
+  --el-button-bg-color: var(--color-primary);
+  --el-button-border-color: var(--color-primary);
+  --el-button-hover-text-color: #FFFFFF;
+  --el-button-hover-bg-color: var(--color-primary-hover);
+  --el-button-hover-border-color: var(--color-primary-hover);
+  --el-button-active-text-color: #FFFFFF;
+  --el-button-active-bg-color: var(--color-primary-active);
+  --el-button-active-border-color: var(--color-primary-active);
+  --el-button-disabled-text-color: #FFFFFF;
+  --el-button-disabled-bg-color: var(--color-primary-light);
+  --el-button-disabled-border-color: var(--color-primary-light);
+}
+
+.el-button--large {
+  --el-button-size: 44px;
+  height: 44px;
+  padding: 0 20px;
+  font-size: 14px;
+}
+
+/* === 5. Message(Toast) === */
+.el-message {
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border: 0 !important;
+  min-width: 280px;
+  padding: 12px 16px !important;
+  background-color: var(--color-bg-surface) !important;
+}
+
+.el-message__content {
+  color: var(--color-text-primary) !important;
+  font-size: 14px !important;
+}
+
+.el-message--success {
+  background-color: var(--color-success-light) !important;
+  border-left: 3px solid var(--color-success) !important;
+}
+.el-message--warning {
+  background-color: var(--color-warning-light) !important;
+  border-left: 3px solid var(--color-warning) !important;
+}
+.el-message--error {
+  background-color: var(--color-danger-light) !important;
+  border-left: 3px solid var(--color-danger) !important;
+}
+.el-message--info {
+  background-color: var(--color-info-light) !important;
+  border-left: 3px solid var(--color-info) !important;
+}
+
+/* === 6. Drawer 抽屉 === */
+.el-drawer {
+  --el-drawer-padding-primary: 0;
+  --el-drawer-border-radius: var(--radius-lg);
+  border-top-left-radius: var(--radius-lg) !important;
+  border-bottom-left-radius: var(--radius-lg) !important;
+}
+
+.el-drawer__header {
+  margin-bottom: 0 !important;
+  padding: 20px 24px !important;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.el-drawer__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.el-drawer__body {
+  padding: 0 !important;
+}
+
+.el-drawer__footer {
+  padding: 12px 24px !important;
+  border-top: 1px solid var(--color-divider);
+  background: var(--color-bg-page);
+}
+
+/* === 7. Dialog === */
+.el-dialog {
+  --el-dialog-border-radius: var(--radius-lg);
+  border-radius: var(--radius-lg) !important;
+  overflow: hidden;
+}
+
+.el-dialog__header {
+  padding: 20px 24px !important;
+  border-bottom: 1px solid var(--color-divider);
+  margin-right: 0 !important;
+}
+
+.el-dialog__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.el-dialog__body {
+  padding: 24px !important;
+}
+
+.el-dialog__footer {
+  padding: 12px 24px !important;
+  border-top: 1px solid var(--color-divider);
+  background: var(--color-bg-page);
+}
+
+/* === 8. Menu 侧边栏 === */
+.el-menu {
+  border-right: 0 !important;
+  background: transparent !important;
+}
+
+.el-menu-item {
+  color: rgba(255, 255, 255, 0.7) !important;
+  border-radius: 8px !important;
+  margin: 2px 8px !important;
+  height: 38px !important;
+  line-height: 38px !important;
+}
+
+.el-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.el-menu-item.is-active {
+  background-color: var(--color-primary) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(79, 107, 255, 0.3);
+}
+
+/* === 9. Card 卡片 === */
+.el-card {
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-sm) !important;
+  transition: box-shadow 200ms var(--ease-standard) !important;
+}
+
+.el-card.is-hover-shadow:hover {
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* === 10. Tag === */
+.el-tag {
+  border-radius: var(--radius-sm) !important;
+  font-weight: 500;
+}
+
+/* === 11. Table 表格 === */
+.el-table {
+  --el-table-border-color: var(--color-divider);
+  --el-table-header-bg-color: var(--color-bg-page);
+  --el-table-row-hover-bg-color: var(--color-primary-light);
+  --el-table-header-text-color: var(--color-text-secondary);
+  --el-table-bg-color: var(--color-bg-surface);
+  --el-table-tr-bg-color: var(--color-bg-surface);
+  --el-table-row-bg-color: var(--color-bg-surface);
+  --el-table-border: 0;
+}
+
+.el-table th.el-table__cell {
+  font-weight: 600 !important;
+  background-color: var(--color-bg-page) !important;
+  color: var(--color-text-secondary) !important;
+  font-size: 13px;
+}
+
+.el-table td.el-table__cell {
+  border-bottom: 1px solid var(--color-divider) !important;
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+/* === 12. Pagination 分页 === */
+.el-pagination .btn-prev,
+.el-pagination .btn-next,
+.el-pager li {
+  border-radius: var(--radius-sm) !important;
+  background: transparent !important;
+  transition: all 120ms var(--ease-standard);
+}
+
+.el-pager li.is-active {
+  background-color: var(--color-primary) !important;
+  color: #FFFFFF !important;
+}
