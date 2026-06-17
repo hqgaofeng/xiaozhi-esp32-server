@@ -35,7 +35,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/home',
     name: 'Home',
-    component: () => import('@/views/LegacyView.vue'),
+    component: () => import('@/views/Home.vue'),
     meta: { title: '概览', requiresAuth: true }
   },
   {
@@ -53,7 +53,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/device-management',
     name: 'DeviceManagement',
-    component: () => import('@/views/LegacyView.vue'),
+    component: () => import('@/views/DeviceManagement.vue'),
     meta: { title: '设备管理', requiresAuth: true }
   },
   {

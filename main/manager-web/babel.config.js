@@ -1,12 +1,4 @@
-module.exports = {
-  presets: [
-    ['@vue/cli-plugin-babel/preset', {
-      useBuiltIns: 'usage',
-      corejs: 3
-    }]
-  ],
-  plugins: [
-    '@babel/plugin-syntax-dynamic-import',  // 确保支持动态导入 (Lazy Loading)
-    '@babel/plugin-transform-runtime'
-  ]
-}
+// ⚠️ 此文件已禁用
+// Vite 用 esbuild 处理 JS,不需要 Babel
+// 保留仅为占位
+module.exports = {}

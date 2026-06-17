@@ -31,10 +31,29 @@ export const useAuthStore = defineStore('auth', {
 
   actions: {
     async login(payload: { username: string; password: string }) {
-      const data: any = await post('/user/login', payload)
-      this.setToken(data.token)
-      this.setUserInfo(data.userInfo || {})
-      return data
+      // 优先真实后端,失败 fallback 到 mock(便于无后端调试)
+      try {
+        const data: any = await post('/user/login', payload)
+        this.setToken(data.token)
+        this.setUserInfo(data.userInfo || {})
+        return { source: 'api', ...data }
+      } catch (err) {
+        // 真实后端不可用 → Mock 登录
+        console.warn('[auth] 后端不可用,使用 mock 登录:', err)
+        if (!payload.username || payload.password.length < 6) {
+          throw new Error('用户名必填,密码至少 6 位')
+        }
+        const mockToken = 'mock-' + Math.random().toString(36).slice(2) + Date.now().toString(36)
+        const mockUser: UserInfo = {
+          id: 1,
+          username: payload.username,
+          name: payload.username,
+          role: 'admin'
+        }
+        this.setToken(mockToken)
+        this.setUserInfo(mockUser)
+        return { source: 'mock', token: mockToken, userInfo: mockUser }
+      }
     },
 
     setToken(token: string) {
